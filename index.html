@@ -42,14 +42,13 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    justify-content: center;
     min-height: 0;
   }
 
   .season-card {
     border: 1.5px solid transparent;
-    border-radius: 20px;
-    padding: 22px 22px;
+    border-radius: 18px;
+    padding: 16px 18px;
     text-align: left;
     cursor: pointer;
     font-family: inherit;
@@ -58,31 +57,31 @@
   .season-card:active { transform: scale(0.98); }
   .season-card.active { border-color: currentColor; }
 
-  .season-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+  .season-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
   .season-num {
     font-family: ui-monospace, 'SF Mono', Menlo, monospace;
     font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase;
-    opacity: 0.55; margin-bottom: 4px;
+    opacity: 0.55; margin-bottom: 2px;
   }
   .season-name {
-    font-size: 30px; font-style: italic; font-weight: 400;
+    font-size: 26px; font-style: italic; font-weight: 400;
     letter-spacing: -0.01em; line-height: 1;
   }
   .season-tag {
     font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
-    opacity: 0.7; margin-top: 6px;
+    font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+    opacity: 0.7; margin-top: 5px;
   }
   .check {
-    width: 28px; height: 28px; border-radius: 50%;
+    width: 24px; height: 24px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
   }
-  .check svg { width: 14px; height: 14px; }
+  .check svg { width: 12px; height: 12px; }
 
-  .dot-preview { display: flex; flex-wrap: wrap; gap: 6px; }
+  .dot-preview { display: flex; flex-wrap: wrap; gap: 5px; }
   .dot-preview > div {
-    width: 18px; height: 18px; border-radius: 50%;
+    width: 15px; height: 15px; border-radius: 50%;
     box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.08);
   }
 
@@ -320,7 +319,7 @@ function renderSeasons() {
     card.className = "season-card" + (currentSeason === key ? " active" : "");
     card.style.backgroundColor = s.bg;
     card.style.color = s.ink;
-    const dotsHtml = s.colors.slice(0, 15).map(c => `<div style="background:${c}"></div>`).join("");
+    const dotsHtml = s.colors.slice(0, 10).map(c => `<div style="background:${c}"></div>`).join("");
     const checkHtml = currentSeason === key
       ? `<div class="check" style="background:${s.ink}"><svg viewBox="0 0 24 24" fill="none" stroke="${s.bg}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>`
       : "";
