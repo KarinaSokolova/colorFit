@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Hue</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#1A1410" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Hue" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<link rel="icon" type="image/png" href="icon-192.png" />
+
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width: 100%; height: 100%;
+    font-family: Georgia, 'Times New Roman', serif;
+    background: #1A1410;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  body { color: #1A1410; }
+
+  #app { width: 100vw; height: 100vh; height: 100dvh; position: relative; overflow: hidden; }
+
+  /* ——— Picker ——— */
+  .picker {
+    width: 100%; height: 100%;
+    background: #F4EFE7;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    display: flex; flex-direction: column;
+  }
+  .picker-scroll { flex: 1; padding: calc(48px + env(safe-area-inset-top)) 24px 16px; }
+  .eyebrow {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: #8A7A63; margin-bottom: 12px;
+  }
+  h1 {
+    font-size: 52px; font-weight: 400; line-height: 0.88;
+    letter-spacing: -0.02em; color: #1A1410; margin-bottom: 20px;
+  }
+  h1 em { font-style: italic; font-weight: 300; }
+  .intro {
+    font-size: 14px; line-height: 1.5; color: #5C4E3D;
+    max-width: 85%; margin-bottom: 32px;
+  }
+
+  .seasons { display: flex; flex-direction: column; gap: 12px; padding: 0 4px; }
+  .season-card {
+    border: 1.5px solid transparent;
+    border-radius: 20px;
+    padding: 22px 20px;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform 0.15s ease;
+  }
+  .season-card:active { transform: scale(0.98); }
+  .season-card.active { border-color: currentColor; }
+
+  .season-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+  .season-num {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase;
+    opacity: 0.55; margin-bottom: 4px;
+  }
+  .season-name {
+    font-size: 30px; font-style: italic; font-weight: 400;
+    letter-spacing: -0.01em; line-height: 1;
+  }
+  .season-tag {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+    opacity: 0.7; margin-top: 6px;
+  }
+  .check {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .check svg { width: 14px; height: 14px; }
+
+  .dot-preview { display: flex; flex-wrap: wrap; gap: 6px; }
+  .dot-preview > div {
+    width: 18px; height: 18px; border-radius: 50%;
+    box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.08);
+  }
+
+  .cta-wrap {
+    padding: 20px 24px calc(20px + env(safe-area-inset-bottom));
+    border-top: 0.5px solid rgba(26,20,16,0.1);
+    background: #F4EFE7;
+  }
+  .cta {
+    width: 100%;
+    background: #1A1410; color: #F4EFE7;
+    border: none; padding: 18px;
+    border-radius: 999px;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 12px; letter-spacing: 0.25em; text-transform: uppercase;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: transform 0.15s ease;
+  }
+  .cta:active { transform: scale(0.98); }
+  .cta svg { width: 15px; height: 15px; }
+
+  /* ——— Camera ——— */
+  .camera-screen {
+    position: absolute; inset: 0;
+    background: #000;
+    display: none;
+  }
+  .camera-screen.active { display: block; }
+
+  video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .top-bar {
+    position: absolute; top: 0; left: 0; right: 0;
+    padding: calc(16px + env(safe-area-inset-top)) 20px 0;
+    display: flex; justify-content: space-between; align-items: center;
+    z-index: 20;
+  }
+  .icon-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%; border: none;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+  .icon-btn:active { transform: scale(0.92); }
+  .icon-btn svg { width: 18px; height: 18px; color: white; }
+
+  .season-pill {
+    padding: 8px 16px;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 999px;
+    display: flex; align-items: center; gap: 8px;
+    color: white;
+  }
+  .season-pill-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .season-pill-name {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+  }
+
+  /* ——— MAIN PALETTE OVERLAY (center, fills screen) ——— */
+  .palette-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    pointer-events: none;
+    padding: calc(90px + env(safe-area-inset-top)) 8vw calc(110px + env(safe-area-inset-bottom));
+  }
+  .palette-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-auto-rows: 1fr;
+    gap: clamp(16px, 5vh, 40px) clamp(12px, 4vw, 32px);
+    width: 100%;
+    height: 100%;
+    max-width: 480px;
+    max-height: 680px;
+  }
+  .palette-dot {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    align-self: center;
+    justify-self: center;
+    max-width: 64px;
+    max-height: 64px;
+    box-shadow:
+      0 3px 10px rgba(0,0,0,0.3),
+      inset 0 0 0 1px rgba(255,255,255,0.2);
+  }
+
+  .season-label {
+    position: absolute;
+    top: calc(74px + env(safe-area-inset-top));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 15;
+    font-family: Georgia, serif;
+    font-size: 20px;
+    font-style: italic;
+    color: white;
+    text-shadow: 0 2px 14px rgba(0,0,0,0.7);
+    letter-spacing: -0.01em;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  .best-colors-tag {
+    position: absolute;
+    bottom: calc(30px + env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 18px;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 999px;
+    color: white;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    z-index: 15;
+    pointer-events: none;
+  }
+
+  .camera-status {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.75);
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase;
+    text-align: center; padding: 32px;
+    z-index: 25;
+    background: #000;
+  }
+  .camera-status.error {
+    color: white;
+    font-family: Georgia, serif;
+    font-size: 14px;
+    letter-spacing: 0;
+    text-transform: none;
+    line-height: 1.5;
+  }
+  .camera-status button {
+    margin-top: 16px;
+    background: white; color: #1A1410;
+    border: none; padding: 12px 22px;
+    border-radius: 999px;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Picker -->
+  <div class="picker" id="picker">
+    <div class="picker-scroll">
+      <div class="eyebrow">Hue · no. 01</div>
+      <h1>Find your<br /><em>palette.</em></h1>
+      <p class="intro">Point your camera at any garment and compare its color to the dots of your seasonal palette.</p>
+      <div class="seasons" id="seasons"></div>
+    </div>
+    <div class="cta-wrap">
+      <button class="cta" id="openCamera">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+        Open camera
+      </button>
+    </div>
+  </div>
+
+  <!-- Camera -->
+  <div class="camera-screen" id="cameraScreen">
+    <video id="video" playsinline muted autoplay></video>
+
+    <div class="top-bar">
+      <button class="icon-btn" id="closeCamera" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="season-pill">
+        <div class="season-pill-dot" id="pillDot"></div>
+        <div class="season-pill-name" id="pillName"></div>
+      </div>
+      <button class="icon-btn" id="flipCamera" aria-label="Flip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </button>
+    </div>
+
+    <div class="season-label" id="seasonLabel"></div>
+
+    <div class="palette-overlay">
+      <div class="palette-grid" id="paletteGrid"></div>
+    </div>
+
+    <div class="best-colors-tag">Best Colors</div>
+
+    <div class="camera-status" id="cameraStatus">Starting camera…</div>
+  </div>
+
+</div>
+
+<script>
+const PALETTES = {
+  spring: {
+    name: "Spring",
+    tagline: "Warm · Light · Bright",
+    accent: "#F4A83A", bg: "#FFF8EC", ink: "#2B1F0E",
+    colors: [
+      "#FFF2E0","#FFE0B8","#FFC98C","#FFB0A0","#FF8A7A",
+      "#F4A83A","#F28B2E","#D96A3A","#C94F2F","#A8391E",
+      "#FFE36E","#F7D048","#E3B422","#B89E3A","#8F7A2C",
+      "#C6DE7A","#9BC455","#6FAE3F","#4E8C2E","#3A6F26",
+      "#7FD1C6","#4DB3A7","#2E8F88","#C9A3D4","#9B7BB8"
+    ]
+  },
+  summer: {
+    name: "Summer",
+    tagline: "Cool · Soft · Muted",
+    accent: "#8DA7C4", bg: "#F2F3F5", ink: "#1F2835",
+    colors: [
+      "#F6F0EE","#EADADA","#D9BFBF","#C49B9F","#A77780",
+      "#E8D4DE","#D0AAB8","#B0899B","#8A6B80","#6B4F63",
+      "#DDE3EB","#B8C4D3","#8DA7C4","#6B86A8","#4E6785",
+      "#C7D8D0","#9DB6AA","#74948A","#547268","#3E564E",
+      "#CFC5DC","#A89CBE","#7E719C","#5D537A","#403959"
+    ]
+  },
+  autumn: {
+    name: "Autumn",
+    tagline: "Warm · Deep · Muted",
+    accent: "#C65A2E", bg: "#F5EDE0", ink: "#2A1A0C",
+    colors: [
+      "#EDE2CE","#D9C4A3","#BFA27B","#A17E54","#7A5B36",
+      "#E8B088","#D48B5E","#B8643B","#923F20","#6B2711",
+      "#C65A2E","#9B3E1E","#711F0F","#4A1308","#2E0A05",
+      "#DDC65A","#B8A33C","#8C7B22","#5F5315","#3B330C",
+      "#6E8C4A","#4E6B32","#344A1F","#1F3012","#4A5D55"
+    ]
+  },
+  winter: {
+    name: "Winter",
+    tagline: "Cool · Deep · Bright",
+    accent: "#0B4F8A", bg: "#F0F2F5", ink: "#0A0E1A",
+    colors: [
+      "#FFFFFF","#E8EAEE","#BAC0C8","#6B7380","#1A1E28",
+      "#F7D8E0","#E898B0","#D13A6E","#A01444","#6B0828",
+      "#C71A2E","#8E0F1E","#5A0812","#3B020A","#1F0005",
+      "#A8DDEC","#5AB0D4","#1E7BA8","#0B4F8A","#062E5A",
+      "#7A4FB0","#4A2888","#2D165E","#0E3E2A","#031A0E"
+    ]
+  }
+};
+
+// Persist selected season across sessions
+let currentSeason = localStorage.getItem("hue.season") || "autumn";
+let facingMode = "environment";
+let stream = null;
+
+const seasonsEl = document.getElementById("seasons");
+function renderSeasons() {
+  seasonsEl.innerHTML = "";
+  Object.entries(PALETTES).forEach(([key, s], idx) => {
+    const card = document.createElement("button");
+    card.className = "season-card" + (currentSeason === key ? " active" : "");
+    card.style.backgroundColor = s.bg;
+    card.style.color = s.ink;
+    const dotsHtml = s.colors.slice(0, 15).map(c => `<div style="background:${c}"></div>`).join("");
+    const checkHtml = currentSeason === key
+      ? `<div class="check" style="background:${s.ink}"><svg viewBox="0 0 24 24" fill="none" stroke="${s.bg}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>`
+      : "";
+    card.innerHTML = `
+      <div class="season-head">
+        <div>
+          <div class="season-num">0${idx + 1} / 04</div>
+          <div class="season-name">${s.name}</div>
+          <div class="season-tag">${s.tagline}</div>
+        </div>
+        ${checkHtml}
+      </div>
+      <div class="dot-preview">${dotsHtml}</div>
+    `;
+    card.addEventListener("click", () => {
+      currentSeason = key;
+      localStorage.setItem("hue.season", key);
+      renderSeasons();
+    });
+    seasonsEl.appendChild(card);
+  });
+}
+renderSeasons();
+
+const video = document.getElementById("video");
+const cameraScreen = document.getElementById("cameraScreen");
+const picker = document.getElementById("picker");
+const statusEl = document.getElementById("cameraStatus");
+const paletteGrid = document.getElementById("paletteGrid");
+const pillDot = document.getElementById("pillDot");
+const pillName = document.getElementById("pillName");
+const seasonLabel = document.getElementById("seasonLabel");
+
+function renderOverlay() {
+  const s = PALETTES[currentSeason];
+  pillDot.style.background = s.accent;
+  pillName.textContent = s.name;
+  seasonLabel.textContent = s.name;
+  paletteGrid.innerHTML = s.colors.map(c => `<div class="palette-dot" style="background:${c}"></div>`).join("");
+}
+
+async function startCamera() {
+  stopCamera();
+  statusEl.textContent = "Starting camera…";
+  statusEl.classList.remove("error");
+  statusEl.style.display = "flex";
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: facingMode }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false
+    });
+    video.srcObject = stream;
+    await video.play();
+    statusEl.style.display = "none";
+  } catch (err) {
+    statusEl.classList.add("error");
+    let msg = "Camera unavailable on this device.";
+    if (err.name === "NotAllowedError" || err.name === "SecurityError") {
+      msg = "Camera access denied. Please allow camera permission in your browser settings and reload.";
+    } else if (err.name === "NotFoundError") {
+      msg = "No camera found on this device.";
+    }
+    statusEl.innerHTML = `<div>${msg}<br><button onclick="startCamera()">Try again</button></div>`;
+  }
+}
+
+function stopCamera() {
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  video.srcObject = null;
+}
+
+document.getElementById("openCamera").addEventListener("click", () => {
+  renderOverlay();
+  picker.style.display = "none";
+  cameraScreen.classList.add("active");
+  startCamera();
+});
+document.getElementById("closeCamera").addEventListener("click", () => {
+  stopCamera();
+  cameraScreen.classList.remove("active");
+  picker.style.display = "flex";
+});
+document.getElementById("flipCamera").addEventListener("click", () => {
+  facingMode = facingMode === "environment" ? "user" : "environment";
+  startCamera();
+});
+
+// ——— Service worker registration ———
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(err => {
+      console.warn("SW registration failed:", err);
+    });
+  });
+}
+</script>
+</body>
+</html>
