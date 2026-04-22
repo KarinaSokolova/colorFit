@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>Hue</title>
+<title>Hue — Find your colors</title>
 
 <!-- PWA -->
 <link rel="manifest" href="manifest.webmanifest" />
@@ -14,7 +14,6 @@
 <meta name="apple-mobile-web-app-title" content="Hue" />
 <link rel="apple-touch-icon" href="icon-192.png" />
 <link rel="icon" type="image/png" href="icon-192.png" />
-
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
@@ -23,72 +22,154 @@
     background: #1A1410;
     overflow: hidden;
     overscroll-behavior: none;
+    color: #1A1410;
   }
-  body { color: #1A1410; }
+  #app { width: 100vw; height: 100vh; height: 100dvh; position: relative; overflow: hidden; background: #000; }
 
-  #app { width: 100vw; height: 100vh; height: 100dvh; position: relative; overflow: hidden; }
-
-  /* ——— Picker ——— */
-  .picker {
-    width: 100%; height: 100%;
-    background: #F4EFE7;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    display: flex; flex-direction: column;
+  /* ——— Camera + drapes ——— */
+  /* Camera is a centered portrait rectangle; drapes fill everything around it. */
+  :root {
+    /* Portrait 3:4 frame — sized so UI (top bar, controls) has breathing room. */
+    /* Use the smaller of width-based and height-based sizing to never overflow. */
+    --frame-w: min(70vw, calc((100vh - 240px) * 3 / 4));
+    --frame-h: calc(var(--frame-w) * 4 / 3);
   }
-  .picker-scroll {
-    flex: 1;
-    padding: calc(20px + env(safe-area-inset-top)) 20px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-height: 0;
+  video {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: var(--frame-w);
+    height: var(--frame-h);
+    object-fit: cover;
+    display: block;
+    background: #000;
+    border-radius: 14px;
+    z-index: 2;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
   }
+  /* One big backdrop drape fills the whole screen behind the video */
+  .drape {
+    position: absolute;
+    inset: 0;
+    transition: background-color 0.25s ease;
+    z-index: 1;
+  }
+  .drape.bottom, .drape.left, .drape.right { display: none; }
 
-  .season-card {
-    border: 1.5px solid transparent;
-    border-radius: 18px;
-    padding: 16px 18px;
-    text-align: left;
+  /* ——— Top bar ——— */
+  .top-bar {
+    position: absolute;
+    top: calc(16px + env(safe-area-inset-top));
+    left: 20px; right: 20px;
+    z-index: 30;
+    display: flex; align-items: center; justify-content: space-between;
+  }  .icon-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%; border: none;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: center;
     cursor: pointer;
-    font-family: inherit;
     transition: transform 0.15s ease;
   }
-  .season-card:active { transform: scale(0.98); }
-  .season-card.active { border-color: currentColor; }
+  .icon-btn:active { transform: scale(0.92); }
+  .icon-btn svg { width: 18px; height: 18px; color: #1A1410; }
 
-  .season-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-  .season-num {
+  .progress-pill {
+    padding: 8px 16px;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 999px;
+    color: #1A1410;
     font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-    font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase;
-    opacity: 0.55; margin-bottom: 2px;
+    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
   }
-  .season-name {
-    font-size: 26px; font-style: italic; font-weight: 400;
-    letter-spacing: -0.01em; line-height: 1;
-  }
-  .season-tag {
-    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-    font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
-    opacity: 0.7; margin-top: 5px;
-  }
-  .check {
-    width: 24px; height: 24px; border-radius: 50%;
+
+  /* ——— Bottom controls ——— */
+  .controls {
+    position: absolute;
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    left: 0; right: 0;
+    z-index: 30;
     display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
+    gap: 28px;
+    padding: 0 20px;
   }
-  .check svg { width: 12px; height: 12px; }
+  .vote-btn {
+    width: 68px; height: 68px;
+    border-radius: 50%; border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+  }
+  .vote-btn:active { transform: scale(0.92); }
+  .vote-btn.dislike { background: white; }
+  .vote-btn.dislike svg { width: 26px; height: 26px; color: #C94F2F; }
+  .vote-btn.like { background: white; }
+  .vote-btn.like svg { width: 28px; height: 28px; color: #4CA572; }
 
-  .dot-preview { display: flex; flex-wrap: wrap; gap: 5px; }
-  .dot-preview > div {
-    width: 15px; height: 15px; border-radius: 50%;
-    box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.08);
+  .vote-hint {
+    position: absolute;
+    bottom: calc(110px + env(safe-area-inset-bottom));
+    left: 0; right: 0;
+    z-index: 30;
+    text-align: center;
+    color: white;
+    font-family: Georgia, serif;
+    font-size: 15px;
+    font-style: italic;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+    pointer-events: none;
   }
 
-  .cta-wrap {
-    padding: 16px 20px calc(20px + env(safe-area-inset-bottom));
-    border-top: 0.5px solid rgba(26,20,16,0.1);
+  /* ——— Intro screen ——— */
+  .intro-screen {
+    position: absolute; inset: 0;
     background: #F4EFE7;
+    z-index: 50;
+    display: flex; flex-direction: column;
+    padding: calc(40px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));
+  }
+  .intro-screen.hidden { display: none; }
+  .intro-inner {
+    flex: 1;
+    display: flex; flex-direction: column; justify-content: center;
+    gap: 20px;
+  }
+  .intro-eyebrow {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: #8A7A63;
+  }
+  .intro-title {
+    font-size: 48px; font-weight: 400; line-height: 0.9;
+    letter-spacing: -0.02em; color: #1A1410;
+  }
+  .intro-title em { font-style: italic; font-weight: 300; }
+  .intro-body {
+    font-size: 15px; line-height: 1.55; color: #5C4E3D;
+    max-width: 90%;
+  }
+  .intro-list {
+    display: flex; flex-direction: column; gap: 14px;
+    margin-top: 8px;
+  }
+  .intro-item {
+    display: flex; align-items: flex-start; gap: 14px;
+    font-family: Georgia, serif; color: #2A1A0C;
+    font-size: 14px; line-height: 1.5;
+  }
+  .intro-num {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 10px; letter-spacing: 0.2em;
+    width: 24px; height: 24px; flex-shrink: 0;
+    border-radius: 50%;
+    background: #1A1410; color: #F4EFE7;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 2px;
   }
   .cta {
     width: 100%;
@@ -102,58 +183,130 @@
     transition: transform 0.15s ease;
   }
   .cta:active { transform: scale(0.98); }
-  .cta svg { width: 15px; height: 15px; }
 
-  /* ——— Camera ——— */
-  .camera-screen {
+  /* ——— Results screen ——— */
+  .results-screen {
+    position: absolute; inset: 0;
+    background: #F4EFE7;
+    z-index: 50;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    display: none;
+  }
+  .results-screen.active { display: block; }
+
+  /* ——— Picker screen (returning users) ——— */
+  .picker-screen {
+    position: absolute; inset: 0;
+    background: #F4EFE7;
+    z-index: 50;
+    display: none;
+    flex-direction: column;
+  }
+  .picker-screen.active { display: flex; }
+  .picker-scroll {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: calc(40px + env(safe-area-inset-top)) 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .picker-header {
+    margin-bottom: 4px;
+  }
+  .picker-header .eyebrow {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: #8A7A63; margin-bottom: 8px;
+  }
+  .picker-header h2 {
+    font-size: 32px; font-weight: 400; line-height: 0.95;
+    letter-spacing: -0.02em; color: #1A1410;
+  }
+  .picker-header h2 em { font-style: italic; font-weight: 300; }
+  .picker-footer {
+    padding: 16px 20px calc(20px + env(safe-area-inset-bottom));
+    border-top: 0.5px solid rgba(26,20,16,0.1);
+    background: #F4EFE7;
+  }
+  .palette-option {
+    background: white;
+    border: 1.5px solid transparent;
+    border-radius: 20px;
+    padding: 22px 20px;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    color: #1A1410;
+    transition: transform 0.15s ease;
+  }
+  .palette-option:active { transform: scale(0.98); }
+  .palette-option-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 14px;
+  }
+  .palette-option-label {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase;
+    color: #8A7A63; margin-bottom: 4px;
+  }
+  .palette-option-label.match {
+    display: inline-block;
+    color: #F4EFE7;
+    background: #1A1410;
+    padding: 4px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.2em;
+  }
+  .palette-option-name {
+    font-size: 26px; font-style: italic; font-weight: 400;
+    letter-spacing: -0.01em; line-height: 1;
+  }
+  .palette-option-tag {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: #8A7A63; margin-top: 6px;
+  }
+  .palette-option-chevron {
+    color: #8A7A63;
+    flex-shrink: 0;
+    margin-top: 6px;
+  }
+  .palette-option-dots {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .palette-option-dots > div {
+    width: 18px; height: 18px; border-radius: 50%;
+    box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.08);
+  }
+
+  /* ——— Palette camera (Hue-style) ——— */
+  .palette-camera-screen {
     position: absolute; inset: 0;
     background: #000;
     display: none;
+    z-index: 60;
   }
-  .camera-screen.active { display: block; }
-
-  video {
-    width: 100%; height: 100%;
+  .palette-camera-screen.active { display: block; }
+  #paletteVideo {
+    position: absolute;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0;
+    bottom: 0;
+    width: 100% !important;
+    height: 100% !important;
     object-fit: cover;
     display: block;
+    transform: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    z-index: 1 !important;
   }
-
-  .top-bar {
-    position: absolute; top: 0; left: 0; right: 0;
-    padding: calc(16px + env(safe-area-inset-top)) 20px 0;
-    display: flex; justify-content: space-between; align-items: center;
-    z-index: 20;
-  }
-  .icon-btn {
-    width: 40px; height: 40px;
-    border-radius: 50%; border: none;
-    background: rgba(0,0,0,0.45);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    transition: transform 0.15s ease;
-  }
-  .icon-btn:active { transform: scale(0.92); }
-  .icon-btn svg { width: 18px; height: 18px; color: white; }
-
-  .season-pill {
-    padding: 8px 16px;
-    background: rgba(0,0,0,0.45);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-radius: 999px;
-    display: flex; align-items: center; gap: 8px;
-    color: white;
-  }
-  .season-pill-dot { width: 8px; height: 8px; border-radius: 50%; }
-  .season-pill-name {
-    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
-  }
-
-  /* ——— Main palette overlay ——— */
-  .palette-overlay {
+  /* Fix the shared .palette-overlay so it works for BOTH the drape test and the Hue camera */
+  .palette-camera-screen .palette-overlay {
     position: absolute;
     inset: 0;
     display: flex;
@@ -163,17 +316,16 @@
     pointer-events: none;
     padding: calc(80px + env(safe-area-inset-top)) 8vw calc(32px + env(safe-area-inset-bottom));
   }
-  .palette-grid {
+  .palette-camera-screen .palette-overlay .palette-grid-cam {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    grid-auto-rows: 1fr;
     gap: clamp(16px, 5vh, 40px) clamp(12px, 4vw, 32px);
     width: 100%;
     height: 100%;
     max-width: 480px;
     max-height: 680px;
   }
-  .palette-dot {
+  .palette-camera-screen .palette-overlay .palette-dot-cam {
     width: 100%;
     aspect-ratio: 1 / 1;
     border-radius: 50%;
@@ -185,7 +337,156 @@
       0 3px 10px rgba(0,0,0,0.3),
       inset 0 0 0 1px rgba(255,255,255,0.2);
   }
+  .results-inner {
+    padding: calc(40px + env(safe-area-inset-top)) 24px calc(32px + env(safe-area-inset-bottom));
+  }
+  .results-eyebrow {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: #8A7A63; margin-bottom: 12px;
+  }
+  .results-title {
+    font-size: 36px; font-weight: 400; line-height: 1;
+    letter-spacing: -0.02em; color: #1A1410; margin-bottom: 4px;
+  }
+  .results-season {
+    font-size: 42px; font-style: italic; font-weight: 400;
+    line-height: 1; letter-spacing: -0.02em; color: #1A1410;
+    margin-bottom: 14px;
+  }
 
+  .axes {
+    display: flex; flex-direction: column; gap: 18px;
+    background: white;
+    border-radius: 18px;
+    padding: 20px;
+    margin-bottom: 8px;
+  }
+  .axis-row { display: flex; flex-direction: column; gap: 8px; }
+  .axis-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .axis-label {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase;
+    color: #8A7A63;
+  }
+  .axis-value {
+    font-family: Georgia, serif;
+    font-size: 15px; font-style: italic;
+    color: #1A1410;
+  }
+  .axis-track { display: flex; flex-direction: column; gap: 5px; }
+  .axis-ends {
+    display: flex; justify-content: space-between;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: #A89B85;
+  }
+  .axis-bar {
+    position: relative;
+    height: 4px;
+    background: #E8DFCE;
+    border-radius: 999px;
+  }
+  .axis-marker {
+    position: absolute;
+    top: 50%;
+    width: 14px; height: 14px;
+    background: #1A1410;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .results-summary {
+    font-size: 14px; line-height: 1.55; color: #5C4E3D;
+    margin-bottom: 28px;
+  }
+  .section-label {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: #8A7A63; margin-bottom: 12px; margin-top: 28px;
+  }
+  .palette-card {
+    background: white;
+    border-radius: 18px;
+    padding: 20px;
+    margin-bottom: 8px;
+  }
+  .palette-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .palette-dot-r {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.1);
+    flex-shrink: 0;
+  }
+  .palette-caption {
+    font-size: 12px; color: #8A7A63;
+    margin-top: 12px;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    letter-spacing: 0.05em;
+  }
+
+  .other-group {
+    background: white;
+    border-radius: 18px;
+    padding: 18px 20px;
+    margin-bottom: 10px;
+  }
+  .other-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 12px;
+  }
+  .other-season-name {
+    font-size: 22px; font-style: italic; font-weight: 400;
+    letter-spacing: -0.01em; color: #1A1410;
+  }
+  .other-count {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: #8A7A63;
+  }
+  .other-dots {
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .other-dots > div {
+    width: 28px; height: 28px; border-radius: 50%;
+    box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.1);
+  }
+
+  .empty-note {
+    font-size: 13px; line-height: 1.5;
+    color: #8A7A63;
+    font-style: italic;
+    padding: 16px 20px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 14px;
+    border: 1px dashed rgba(138,122,99,0.3);
+  }
+
+  .results-actions {
+    display: flex; flex-direction: column; gap: 10px; margin-top: 28px;
+  }
+  .results-actions-row {
+    display: flex; gap: 10px;
+  }
+  .results-actions-row .results-btn { flex: 1; }
+  .results-btn {
+    border: none; padding: 16px;
+    border-radius: 999px;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+    cursor: pointer;
+  }
+  .results-btn.primary { background: #1A1410; color: #F4EFE7; }
+  .results-btn.secondary { background: transparent; color: #1A1410; border: 1.5px solid #1A1410; }
+
+  /* ——— Camera status ——— */
   .camera-status {
     position: absolute; inset: 0;
     display: flex; align-items: center; justify-content: center;
@@ -193,9 +494,10 @@
     font-family: ui-monospace, 'SF Mono', Menlo, monospace;
     font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase;
     text-align: center; padding: 32px;
-    z-index: 25;
+    z-index: 45;
     background: #000;
   }
+  .camera-status.hidden { display: none; }
   .camera-status.error {
     color: white;
     font-family: Georgia, serif;
@@ -218,148 +520,335 @@
 <body>
 <div id="app">
 
-  <!-- Picker -->
-  <div class="picker" id="picker">
-    <div class="picker-scroll" id="seasons"></div>
-    <div class="cta-wrap">
-      <button class="cta" id="openCamera">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-        Open camera
-      </button>
+  <!-- Drapes & camera (always mounted) -->
+  <div class="drape top" id="drapeTop"></div>
+  <div class="drape bottom" id="drapeBottom"></div>
+  <div class="drape left" id="drapeLeft"></div>
+  <div class="drape right" id="drapeRight"></div>
+  <video id="video" playsinline muted autoplay></video>
+
+  <!-- Camera status -->
+  <div class="camera-status hidden" id="cameraStatus"></div>
+
+  <!-- Top bar (shown during test) -->
+  <div class="top-bar" id="topBar" style="display:none">
+    <button class="icon-btn" id="restartBtn" aria-label="Restart">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+    </button>
+    <div class="progress-pill" id="progress">0 / 24</div>
+    <button class="icon-btn" id="flipBtn" aria-label="Flip">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+    </button>
+  </div>
+
+  <!-- Vote hint -->
+  <div class="vote-hint" id="voteHint" style="display:none">Does this color flatter you?</div>
+
+  <!-- Bottom controls -->
+  <div class="controls" id="controls" style="display:none">
+    <button class="vote-btn dislike" id="dislikeBtn" aria-label="Dislike">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <button class="vote-btn like" id="likeBtn" aria-label="Like">
+      <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+    </button>
+  </div>
+
+  <!-- Intro -->
+  <div class="intro-screen" id="intro">
+    <div class="intro-inner">
+      <div>
+        <div class="intro-eyebrow">Hue · no. 01</div>
+        <h1 class="intro-title">Find your<br /><em>true colors.</em></h1>
+      </div>
+      <p class="intro-body">
+        Colors will frame your face one by one. Decide if each flatters you or not — just like a stylist would drape fabric against your skin.
+      </p>
+      <div class="intro-list">
+        <div class="intro-item"><div class="intro-num">1</div><div>Position yourself in good, natural light with a bare face.</div></div>
+        <div class="intro-item"><div class="intro-num">2</div><div>Look at yourself in the center — not at the color.</div></div>
+        <div class="intro-item"><div class="intro-num">3</div><div>Tap ♥ if it brightens you, ✕ if it dulls you.</div></div>
+      </div>
+    </div>
+    <button class="cta" id="startBtn">Begin · 24 colors</button>
+  </div>
+
+  <!-- Results -->
+  <div class="results-screen" id="results">
+    <div class="results-inner" id="resultsInner"></div>
+  </div>
+
+  <!-- Picker (returning users see this instead of intro) -->
+  <div class="picker-screen" id="picker">
+    <div class="picker-scroll" id="pickerScroll"></div>
+    <div class="picker-footer">
+      <button class="results-btn secondary" id="retakeBtn" style="width:100%;">Retake the test</button>
     </div>
   </div>
 
-  <!-- Camera -->
-  <div class="camera-screen" id="cameraScreen">
-    <video id="video" playsinline muted autoplay></video>
+  <!-- Palette camera (Hue-style — camera feed with dots overlay) -->
+  <div class="palette-camera-screen" id="paletteCamera">
+    <video id="paletteVideo" playsinline muted autoplay></video>
 
-    <div class="top-bar">
-      <button class="icon-btn" id="closeCamera" aria-label="Close">
+    <div class="top-bar" id="paletteCameraTopBar">
+      <button class="icon-btn" id="paletteCameraBack" aria-label="Back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
-      <div class="season-pill">
-        <div class="season-pill-dot" id="pillDot"></div>
-        <div class="season-pill-name" id="pillName"></div>
-      </div>
-      <button class="icon-btn" id="flipCamera" aria-label="Flip">
+      <div class="progress-pill" id="paletteCameraName"></div>
+      <button class="icon-btn" id="paletteCameraFlip" aria-label="Flip">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
       </button>
     </div>
 
-    <div class="palette-overlay">
-      <div class="palette-grid" id="paletteGrid"></div>
-    </div>
+    <div class="palette-overlay" id="paletteOverlay"></div>
 
-    <div class="camera-status" id="cameraStatus">Starting camera…</div>
+    <div class="camera-status hidden" id="paletteCameraStatus"></div>
   </div>
 
 </div>
 
 <script>
-const PALETTES = {
-  spring: {
-    name: "Spring",
-    tagline: "Warm · Light · Bright",
-    accent: "#F4A83A", bg: "#FFF8EC", ink: "#2B1F0E",
-    colors: [
-      "#FFF2E0","#FFE0B8","#FFC98C","#FFB0A0","#FF8A7A",
-      "#F4A83A","#F28B2E","#D96A3A","#C94F2F","#A8391E",
-      "#FFE36E","#F7D048","#E3B422","#B89E3A","#8F7A2C",
-      "#C6DE7A","#9BC455","#6FAE3F","#4E8C2E","#3A6F26",
-      "#7FD1C6","#4DB3A7","#2E8F88","#C9A3D4","#9B7BB8"
-    ]
-  },
-  summer: {
-    name: "Summer",
-    tagline: "Cool · Soft · Muted",
-    accent: "#8DA7C4", bg: "#F2F3F5", ink: "#1F2835",
-    colors: [
-      "#F6F0EE","#EADADA","#D9BFBF","#C49B9F","#A77780",
-      "#E8D4DE","#D0AAB8","#B0899B","#8A6B80","#6B4F63",
-      "#DDE3EB","#B8C4D3","#8DA7C4","#6B86A8","#4E6785",
-      "#C7D8D0","#9DB6AA","#74948A","#547268","#3E564E",
-      "#CFC5DC","#A89CBE","#7E719C","#5D537A","#403959"
-    ]
-  },
-  autumn: {
-    name: "Autumn",
-    tagline: "Warm · Deep · Muted",
-    accent: "#C65A2E", bg: "#F5EDE0", ink: "#2A1A0C",
-    colors: [
-      "#EDE2CE","#D9C4A3","#BFA27B","#A17E54","#7A5B36",
-      "#E8B088","#D48B5E","#B8643B","#923F20","#6B2711",
-      "#C65A2E","#9B3E1E","#711F0F","#4A1308","#2E0A05",
-      "#DDC65A","#B8A33C","#8C7B22","#5F5315","#3B330C",
-      "#6E8C4A","#4E6B32","#344A1F","#1F3012","#4A5D55"
-    ]
-  },
-  winter: {
-    name: "Winter",
-    tagline: "Cool · Deep · Bright",
-    accent: "#0B4F8A", bg: "#F0F2F5", ink: "#0A0E1A",
-    colors: [
-      "#FFFFFF","#E8EAEE","#BAC0C8","#6B7380","#1A1E28",
-      "#F7D8E0","#E898B0","#D13A6E","#A01444","#6B0828",
-      "#C71A2E","#8E0F1E","#5A0812","#3B020A","#1F0005",
-      "#A8DDEC","#5AB0D4","#1E7BA8","#0B4F8A","#062E5A",
-      "#7A4FB0","#4A2888","#2D165E","#0E3E2A","#031A0E"
-    ]
-  }
+// ——— Curated diagnostic palette with three-axis scoring ———
+// Each color has temp (-1 cool → +1 warm), value (-1 light → +1 deep),
+// chroma (-1 muted → +1 bright). Your likes/dislikes reveal where YOU land
+// on each axis, which determines your sub-season.
+const TEST_COLORS = [
+  // SPRING — warm, light-to-medium, BRIGHT
+  { hex: "#FF6B4A", season: "spring", note: "Coral",           temp:  0.7, value: -0.2, chroma:  0.9 },
+  { hex: "#FFD23F", season: "spring", note: "Buttercup yellow", temp:  0.8, value: -0.6, chroma:  1.0 },
+  { hex: "#5BC0BE", season: "spring", note: "Turquoise",        temp:  0.2, value: -0.3, chroma:  0.8 },
+  { hex: "#FFAD5C", season: "spring", note: "Peach",            temp:  0.8, value: -0.4, chroma:  0.7 },
+  { hex: "#A8D94E", season: "spring", note: "Apple green",      temp:  0.5, value: -0.3, chroma:  0.9 },
+  { hex: "#FF9ECE", season: "spring", note: "Warm pink",        temp:  0.5, value: -0.3, chroma:  0.8 },
+
+  // SUMMER — cool, light-to-medium, MUTED
+  { hex: "#D4A5C0", season: "summer", note: "Dusty rose",       temp: -0.3, value: -0.1, chroma: -0.6 },
+  { hex: "#8FA8B5", season: "summer", note: "Slate blue",       temp: -0.5, value:  0.1, chroma: -0.6 },
+  { hex: "#B8B4D8", season: "summer", note: "Lavender",         temp: -0.6, value: -0.2, chroma: -0.5 },
+  { hex: "#C5D5CB", season: "summer", note: "Sage mist",        temp: -0.3, value: -0.3, chroma: -0.7 },
+  { hex: "#8B6F8D", season: "summer", note: "Mauve",            temp: -0.3, value:  0.3, chroma: -0.7 },
+  { hex: "#6E89A8", season: "summer", note: "Periwinkle",       temp: -0.6, value:  0.2, chroma: -0.4 },
+
+  // AUTUMN — warm, medium-to-deep, MUTED
+  { hex: "#C65A2E", season: "autumn", note: "Terracotta",       temp:  0.8, value:  0.3, chroma: -0.2 },
+  { hex: "#8B6914", season: "autumn", note: "Mustard",          temp:  0.8, value:  0.3, chroma: -0.3 },
+  { hex: "#5D4E37", season: "autumn", note: "Coffee",           temp:  0.5, value:  0.7, chroma: -0.7 },
+  { hex: "#4A5D3A", season: "autumn", note: "Olive",            temp:  0.4, value:  0.4, chroma: -0.6 },
+  { hex: "#B8622A", season: "autumn", note: "Rust",             temp:  0.9, value:  0.3, chroma: -0.1 },
+  { hex: "#7A2E1F", season: "autumn", note: "Oxblood",          temp:  0.6, value:  0.7, chroma: -0.4 },
+
+  // WINTER — cool, deep, BRIGHT
+  { hex: "#D13A6E", season: "winter", note: "Fuchsia",          temp: -0.3, value:  0.2, chroma:  0.9 },
+  { hex: "#1E5A99", season: "winter", note: "Royal blue",       temp: -0.5, value:  0.5, chroma:  0.7 },
+  { hex: "#C71A2E", season: "winter", note: "True red",         temp: -0.1, value:  0.4, chroma:  0.9 },
+  { hex: "#4A1F6F", season: "winter", note: "Deep purple",      temp: -0.4, value:  0.8, chroma:  0.5 },
+  { hex: "#2E7D5B", season: "winter", note: "Emerald",          temp: -0.3, value:  0.5, chroma:  0.7 },
+  { hex: "#0A0E1A", season: "winter", note: "Jet black",        temp: -0.1, value:  1.0, chroma:  0.0 }
+];
+
+// ——— Extra pool for "Continue testing" — different hues within each season ———
+const EXTRA_COLORS = [
+  // SPRING — second batch (mostly warm/bright)
+  { hex: "#FFBFA0", season: "spring", note: "Apricot",          temp:  0.7, value: -0.5, chroma:  0.5 },
+  { hex: "#C4E88A", season: "spring", note: "Lime",             temp:  0.4, value: -0.4, chroma:  0.8 },
+  { hex: "#FFA07A", season: "spring", note: "Salmon",           temp:  0.7, value: -0.3, chroma:  0.7 },
+  { hex: "#78D6E0", season: "spring", note: "Aqua",             temp:  0.0, value: -0.3, chroma:  0.7 },
+  { hex: "#F5D76E", season: "spring", note: "Daffodil",         temp:  0.7, value: -0.4, chroma:  0.8 },
+  { hex: "#E88AC4", season: "spring", note: "Rose pink",        temp:  0.3, value: -0.2, chroma:  0.7 },
+
+  // SUMMER — second batch
+  { hex: "#A8C0D8", season: "summer", note: "Powder blue",      temp: -0.5, value: -0.3, chroma: -0.5 },
+  { hex: "#C8B8D0", season: "summer", note: "Wisteria",         temp: -0.4, value: -0.2, chroma: -0.6 },
+  { hex: "#E4C8CE", season: "summer", note: "Shell pink",       temp: -0.1, value: -0.5, chroma: -0.6 },
+  { hex: "#7A9A95", season: "summer", note: "Eucalyptus",       temp: -0.2, value:  0.2, chroma: -0.7 },
+  { hex: "#5E7A99", season: "summer", note: "Denim blue",       temp: -0.5, value:  0.3, chroma: -0.5 },
+  { hex: "#9D8B9D", season: "summer", note: "Heather",          temp: -0.2, value:  0.2, chroma: -0.8 },
+
+  // AUTUMN — second batch
+  { hex: "#D4A574", season: "autumn", note: "Camel",            temp:  0.6, value:  0.0, chroma: -0.4 },
+  { hex: "#A8794E", season: "autumn", note: "Caramel",          temp:  0.7, value:  0.3, chroma: -0.4 },
+  { hex: "#6B8E4E", season: "autumn", note: "Moss",             temp:  0.3, value:  0.2, chroma: -0.4 },
+  { hex: "#B87333", season: "autumn", note: "Copper",           temp:  0.9, value:  0.2, chroma:  0.0 },
+  { hex: "#8C3A2B", season: "autumn", note: "Brick",            temp:  0.6, value:  0.5, chroma: -0.2 },
+  { hex: "#3C5E3A", season: "autumn", note: "Forest",           temp:  0.2, value:  0.6, chroma: -0.4 },
+
+  // WINTER — second batch
+  { hex: "#FF1F5A", season: "winter", note: "Hot pink",         temp: -0.1, value:  0.0, chroma:  1.0 },
+  { hex: "#005F8F", season: "winter", note: "Sapphire",         temp: -0.5, value:  0.6, chroma:  0.8 },
+  { hex: "#FFFFFF", season: "winter", note: "Pure white",       temp:  0.0, value: -1.0, chroma:  0.0 },
+  { hex: "#1C8C6B", season: "winter", note: "Pine",             temp: -0.2, value:  0.5, chroma:  0.5 },
+  { hex: "#6B0A88", season: "winter", note: "Magenta",          temp: -0.4, value:  0.7, chroma:  0.8 },
+  { hex: "#B8E6EC", season: "winter", note: "Icy blue",         temp: -0.3, value: -0.6, chroma:  0.2 }
+];
+
+// ——— 12 sub-seasons defined by their axis profile ———
+// Each has a target (temp, value, chroma). The sub-season whose target
+// is closest to the user's axis profile wins.
+const SUB_SEASONS = {
+  "Bright Spring":  { temp:  0.6, value: -0.1, chroma:  0.9, parent: "spring",
+                      tagline: "Warm · Clear · Vivid",
+                      description: "High-contrast and electric. Your face can hold saturated color without being overwhelmed." },
+  "True Spring":    { temp:  0.8, value: -0.2, chroma:  0.7, parent: "spring",
+                      tagline: "Warm · Fresh · Sunny",
+                      description: "Golden and luminous. You come alive in warm, bright, spring-morning tones." },
+  "Light Spring":   { temp:  0.4, value: -0.5, chroma:  0.5, parent: "spring",
+                      tagline: "Warm · Light · Soft-bright",
+                      description: "Delicate and airy. You glow in light, warm, slightly dusted pastels." },
+  "Light Summer":   { temp: -0.3, value: -0.5, chroma: -0.3, parent: "summer",
+                      tagline: "Cool · Light · Gentle",
+                      description: "Soft and luminous. You flourish in light, cool, whispered pastels." },
+  "True Summer":    { temp: -0.5, value: -0.1, chroma: -0.5, parent: "summer",
+                      tagline: "Cool · Soft · Dusty",
+                      description: "Hazy and refined. You shine in cool, medium, dusty tones with complexity." },
+  "Soft Summer":    { temp: -0.2, value:  0.1, chroma: -0.7, parent: "summer",
+                      tagline: "Neutral-cool · Medium · Very muted",
+                      description: "Quiet and sophisticated. You look best in deeply muted, slightly cool tones that reveal layers on second look." },
+  "Soft Autumn":    { temp:  0.2, value:  0.1, chroma: -0.7, parent: "autumn",
+                      tagline: "Neutral-warm · Medium · Very muted",
+                      description: "Warm but whispered. You shine in dusted, complex earth tones — nothing bright, nothing stark." },
+  "True Autumn":    { temp:  0.7, value:  0.3, chroma: -0.4, parent: "autumn",
+                      tagline: "Warm · Medium-deep · Muted",
+                      description: "Spiced and grounded. You thrive in warm, medium-depth earth tones — terracotta, mustard, olive." },
+  "Dark Autumn":    { temp:  0.4, value:  0.7, chroma: -0.2, parent: "autumn",
+                      tagline: "Neutral-warm · Deep · Rich",
+                      description: "Dramatic and burnished. You can hold the deepest warm tones — oxblood, forest, dark teal." },
+  "Dark Winter":    { temp: -0.3, value:  0.8, chroma:  0.4, parent: "winter",
+                      tagline: "Cool · Deep · Rich",
+                      description: "Intense and jewel-toned. You command dark, cool, saturated colors." },
+  "True Winter":    { temp: -0.4, value:  0.5, chroma:  0.8, parent: "winter",
+                      tagline: "Cool · Medium-deep · Vivid",
+                      description: "Crystalline and stark. You radiate in cool, saturated, high-contrast tones." },
+  "Bright Winter":  { temp: -0.1, value:  0.3, chroma:  0.9, parent: "winter",
+                      tagline: "Neutral-cool · Medium · Very vivid",
+                      description: "Electric and clear. You shine in vivid, saturated, high-contrast colors." }
 };
 
-let currentSeason = localStorage.getItem("hue.season") || "autumn";
-let facingMode = "environment";
+// Parent season meta (for the palette display)
+const SEASON_META = {
+  spring: { name: "Spring", tagline: "Warm · Light · Bright" },
+  summer: { name: "Summer", tagline: "Cool · Soft · Muted" },
+  autumn: { name: "Autumn", tagline: "Warm · Deep · Muted" },
+  winter: { name: "Winter", tagline: "Cool · Deep · Bright" }
+};
+
+// Full palette for each season — curated 18-color signature sets
+const FULL_PALETTES = {
+  // SPRING — warm, light-to-medium, clear. Fresh, sunny, luminous.
+  spring: [
+    "#FFE0B8",  // peach cream
+    "#FFC98C",  // warm peach
+    "#FFAD5C",  // apricot
+    "#FF8A6B",  // coral
+    "#FF6B4A",  // warm coral-red
+    "#E84A3E",  // true warm red
+    "#FFD23F",  // buttercup
+    "#F7C428",  // golden yellow
+    "#FF9ECE",  // warm pink
+    "#FFB3C6",  // soft pink
+    "#E88AC4",  // rose
+    "#A8D94E",  // apple green
+    "#78C850",  // leaf green
+    "#5BC0BE",  // turquoise
+    "#4DAEC4",  // aqua
+    "#78A8D0",  // warm sky blue
+    "#C9A3D4",  // soft violet
+    "#9B7BB8",  // periwinkle purple
+  ],
+  // SUMMER — cool, light-to-medium, muted. Hazy, dusty, refined.
+  summer: [
+    "#E4C8CE",  // shell pink
+    "#D4A5C0",  // dusty rose
+    "#C08899",  // soft rose
+    "#A67888",  // mauve rose
+    "#8B6F8D",  // muted mauve
+    "#7E719C",  // dusty violet
+    "#9D8B9D",  // heather
+    "#CFC5DC",  // soft lilac
+    "#A89CBE",  // dusty lavender
+    "#B8C4D3",  // powder blue-grey
+    "#8DA7C4",  // slate blue
+    "#6E89A8",  // periwinkle blue
+    "#5E7A99",  // denim blue
+    "#7A9A95",  // eucalyptus
+    "#9DB6AA",  // sage
+    "#547268",  // teal grey
+    "#B5B5B0",  // cool grey
+    "#6B6873",  // charcoal heather
+  ],
+  // AUTUMN — warm, medium-to-deep, muted. Earthy, spiced, burnished.
+  autumn: [
+    "#E8B088",  // apricot-peach
+    "#D48B5E",  // warm tan
+    "#B87333",  // copper
+    "#C65A2E",  // terracotta
+    "#9B3E1E",  // rust
+    "#7A2E1F",  // oxblood
+    "#5D4E37",  // coffee
+    "#A17E54",  // caramel
+    "#BFA27B",  // camel
+    "#D9C4A3",  // sand
+    "#DDC65A",  // mustard-yellow
+    "#B8A33C",  // mustard
+    "#8C7B22",  // dark mustard
+    "#6E8C4A",  // moss
+    "#4E6B32",  // olive
+    "#344A1F",  // forest
+    "#4A5D55",  // teal-green
+    "#3C4A45",  // dark pine
+  ],
+  // WINTER — cool, medium-to-deep, bright. Stark, crystalline, jewel-toned.
+  winter: [
+    "#FFFFFF",  // pure white
+    "#E8EAEE",  // soft white
+    "#B8E6EC",  // icy blue
+    "#F7D8E0",  // ice pink
+    "#E898B0",  // hot pink
+    "#D13A6E",  // fuchsia
+    "#A01444",  // wine
+    "#C71A2E",  // true red
+    "#8E0F1E",  // blood red
+    "#5AB0D4",  // bright blue
+    "#1E7BA8",  // royal blue
+    "#0B4F8A",  // sapphire
+    "#7A4FB0",  // amethyst
+    "#4A2888",  // deep purple
+    "#2E7D5B",  // emerald
+    "#0E3E2A",  // pine green
+    "#1A1E28",  // midnight
+    "#0A0E1A",  // jet black
+  ]
+};
+
+// ——— State ———
+let facingMode = "user"; // start front-facing for self-draping
 let stream = null;
+let testOrder = [];
+let currentIdx = 0;
+let results = []; // { color, liked } — accumulates across continue-rounds
+let testedHexes = new Set(); // track which colors have been shown
 
-const seasonsEl = document.getElementById("seasons");
-function renderSeasons() {
-  seasonsEl.innerHTML = "";
-  Object.entries(PALETTES).forEach(([key, s], idx) => {
-    const card = document.createElement("button");
-    card.className = "season-card" + (currentSeason === key ? " active" : "");
-    card.style.backgroundColor = s.bg;
-    card.style.color = s.ink;
-    const dotsHtml = s.colors.slice(0, 10).map(c => `<div style="background:${c}"></div>`).join("");
-    const checkHtml = currentSeason === key
-      ? `<div class="check" style="background:${s.ink}"><svg viewBox="0 0 24 24" fill="none" stroke="${s.bg}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>`
-      : "";
-    card.innerHTML = `
-      <div class="season-head">
-        <div>
-          <div class="season-num">0${idx + 1} / 04</div>
-          <div class="season-name">${s.name}</div>
-          <div class="season-tag">${s.tagline}</div>
-        </div>
-        ${checkHtml}
-      </div>
-      <div class="dot-preview">${dotsHtml}</div>
-    `;
-    card.addEventListener("click", () => { currentSeason = key; localStorage.setItem("hue.season", key); renderSeasons(); });
-    seasonsEl.appendChild(card);
-  });
-}
-renderSeasons();
-
+// ——— DOM refs ———
 const video = document.getElementById("video");
-const cameraScreen = document.getElementById("cameraScreen");
-const picker = document.getElementById("picker");
+const intro = document.getElementById("intro");
+const resultsScreen = document.getElementById("results");
+const resultsInner = document.getElementById("resultsInner");
 const statusEl = document.getElementById("cameraStatus");
-const paletteGrid = document.getElementById("paletteGrid");
-const pillDot = document.getElementById("pillDot");
-const pillName = document.getElementById("pillName");
+const topBar = document.getElementById("topBar");
+const controls = document.getElementById("controls");
+const voteHint = document.getElementById("voteHint");
+const progress = document.getElementById("progress");
+const drapes = {
+  top: document.getElementById("drapeTop"),
+  bottom: document.getElementById("drapeBottom"),
+  left: document.getElementById("drapeLeft"),
+  right: document.getElementById("drapeRight")
+};
 
-function renderOverlay() {
-  const s = PALETTES[currentSeason];
-  pillDot.style.background = s.accent;
-  pillName.textContent = s.name;
-  paletteGrid.innerHTML = s.colors.map(c => `<div class="palette-dot" style="background:${c}"></div>`).join("");
-}
-
+// ——— Camera ———
 async function startCamera() {
   stopCamera();
+  statusEl.classList.remove("hidden", "error");
   statusEl.textContent = "Starting camera…";
-  statusEl.classList.remove("error");
-  statusEl.style.display = "flex";
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: { ideal: facingMode }, width: { ideal: 1280 }, height: { ideal: 720 } },
@@ -367,40 +856,757 @@ async function startCamera() {
     });
     video.srcObject = stream;
     await video.play();
-    statusEl.style.display = "none";
+    statusEl.classList.add("hidden");
   } catch (err) {
     statusEl.classList.add("error");
-    let msg = "Camera unavailable on this device.";
+    let msg = "Camera unavailable.";
     if (err.name === "NotAllowedError" || err.name === "SecurityError") {
-      msg = "Camera access denied. Please allow camera permission in your browser settings and reload.";
+      msg = "Camera access denied. Allow camera permission and reload.";
     } else if (err.name === "NotFoundError") {
-      msg = "No camera found on this device.";
+      msg = "No camera found.";
     }
     statusEl.innerHTML = `<div>${msg}<br><button onclick="startCamera()">Try again</button></div>`;
   }
 }
-
 function stopCamera() {
   if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
   video.srcObject = null;
 }
 
-document.getElementById("openCamera").addEventListener("click", () => {
-  renderOverlay();
-  picker.style.display = "none";
-  cameraScreen.classList.add("active");
-  startCamera();
-});
-document.getElementById("closeCamera").addEventListener("click", () => {
+// ——— Test flow ———
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function setDrapeColor(hex) {
+  // Single backdrop drape now — still iterate safely if any are present
+  Object.values(drapes).forEach(d => { if (d) d.style.backgroundColor = hex; });
+  document.body.style.backgroundColor = hex;
+}
+
+function updateProgress() {
+  progress.textContent = `${currentIdx} / ${testOrder.length}`;
+}
+
+function showCurrent() {
+  if (currentIdx >= testOrder.length) {
+    showResults();
+    return;
+  }
+  setDrapeColor(testOrder[currentIdx].hex);
+  updateProgress();
+}
+
+function vote(liked) {
+  if (currentIdx >= testOrder.length) return;
+  const color = testOrder[currentIdx];
+  results.push({ color, liked });
+  testedHexes.add(color.hex.toLowerCase());
+  currentIdx++;
+  showCurrent();
+}
+
+function startTest() {
+  testOrder = shuffle(TEST_COLORS);
+  currentIdx = 0;
+  results = [];
+  testedHexes = new Set();
+  intro.classList.add("hidden");
+  resultsScreen.classList.remove("active");
+  topBar.style.display = "flex";
+  controls.style.display = "flex";
+  voteHint.style.display = "block";
+  startCamera().then(showCurrent);
+}
+
+function continueTest() {
+  // Pick up to 12 untested colors from the extra pool
+  const untested = EXTRA_COLORS.filter(c => !testedHexes.has(c.hex.toLowerCase()));
+  if (untested.length === 0) {
+    alert("You've tested every color we have. That's a very thorough result!");
+    return;
+  }
+  testOrder = shuffle(untested).slice(0, 12);
+  currentIdx = 0;
+  // Keep existing results — we're adding to them
+  resultsScreen.classList.remove("active");
+  topBar.style.display = "flex";
+  controls.style.display = "flex";
+  voteHint.style.display = "block";
+  startCamera().then(showCurrent);
+}
+
+// ——— HSL palette generation from axis profile ———
+// Generate a personalized rainbow from the user's temp/value/chroma profile.
+// Hue = position on color wheel (we sample ~12 points)
+// Saturation ← chroma (-1 muted = 15%, +1 vivid = 85%)
+// Lightness ← value (-1 light = 75%, +1 deep = 30%), inverted
+// Temperature shifts weight toward warm or cool hues.
+
+function hslToHex(h, s, l) {
+  s /= 100; l /= 100;
+  const k = n => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = n => {
+    const color = l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+    return Math.round(255 * color).toString(16).padStart(2, '0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
+}
+
+function generatePersonalPalette(profile) {
+  // Map axes to HSL parameters
+  // chroma -1..1 → saturation 15..75
+  const baseSat = 15 + (profile.chroma + 1) * 30; // -1→15, 0→45, 1→75
+
+  // value -1..1 → lightness 78..32 (inverted: low value = light)
+  const baseLight = 78 - (profile.value + 1) * 23; // -1→78, 0→55, 1→32
+
+  // Temperature affects hue sampling: warm people get more reds/oranges/yellows,
+  // cool people get more blues/purples. We achieve this by slightly
+  // compressing/expanding the warm-half vs cool-half of the hue wheel.
+  const warmBias = profile.temp; // -1..1
+
+  // 24 hues covering the full wheel — denser around yellows/pinks/blues
+  // because the human eye distinguishes more colors there
+  const hues = [
+    350, 5, 15,           // reds: deep-red, true-red, warm-red
+    25, 35, 42,           // oranges: orange, golden-orange, amber
+    50, 56, 62, 70,       // yellows: warm-yellow, true-yellow, lemon, golden-lime
+    85, 100,              // yellow-greens: chartreuse, fresh-green
+    130, 155,             // greens: leaf-green, deep-green
+    175, 190,             // teals: teal, blue-teal
+    205, 218, 232,        // blues: sky-blue, true-blue, indigo-blue
+    250, 270,             // indigos/purples: indigo, true-purple
+    290, 310,             // purples/magentas: magenta-purple, magenta
+    325, 340              // pinks: warm-pink, rose-pink
+  ];
+
+  return hues.map(baseHue => {
+    // Skew hue based on temperature: warm people's "green" reads more yellow-green,
+    // cool people's "green" reads more blue-green, etc.
+    const shift = warmBias * 12 * Math.sin((baseHue / 360) * 2 * Math.PI);
+    const h = (baseHue - shift + 360) % 360;
+
+    // Per-hue lightness correction so all dots feel visually balanced.
+    // Yellows look unnaturally bright at the same lightness; reds look heavier.
+    let l = baseLight;
+    if (h < 60 || h > 330) l -= 4;        // reds heavier
+    if (h > 45 && h < 75)  l += 6;        // proper yellows: lift more so they don't read olive
+    if (h > 200 && h < 260) l += 2;       // blues brighten slightly
+    if (h > 320 && h < 350) l += 3;       // pinks: lift slightly so they read pink not mauve
+
+    // Saturation per hue.
+    // Special handling: muted yellows become mud, muted oranges become brown.
+    // For warm muted profiles, yellows/oranges/reds need EXTRA saturation
+    // (relative to baseSat) so they read as mustard/terracotta/rust — the
+    // signature warm-muted colors people actually wear.
+    let s = baseSat;
+    if (h > 100 && h < 180) s = Math.max(10, s - 5);              // greens slightly more muted
+    if (h > 30 && h < 70)   s = Math.min(95, s + 18);             // yellows: big boost (mustard zone)
+    if (h > 10 && h < 35)   s = Math.min(95, s + 12);             // oranges: medium boost (terracotta)
+    if ((h < 15 || h > 350)) s = Math.min(95, s + 8);             // reds: small boost
+    if (h > 320 && h < 350) s = Math.min(95, s + 10);             // pinks: boost so they stay pink
+
+    // Clamp
+    l = Math.max(20, Math.min(88, l));
+    s = Math.max(8, Math.min(95, s));
+
+    return hslToHex(h, s, l);
+  });
+}
+
+// Generate a set of neutrals tuned to the profile.
+// Includes both warm creams (beige family) and cool greys, weighted by temp.
+// For warm profiles: more creams. For cool profiles: more greys. Mixed for neutral.
+function generateNeutrals(profile) {
+  // Warm cream hue (golden beige). Cool grey hue (blue-grey).
+  // Both get adjusted slightly by user's temp for fine-tuning.
+  const warmHue = 38 - profile.temp * 6;   // warm: golden beige (lower hue if very warm)
+  const coolHue = 220 + profile.temp * 15; // cool: blue-grey (warmer if profile is warm)
+
+  // Cream needs MORE saturation than grey to actually read as cream
+  // (otherwise it just looks beige-ish grey). For muted profiles still keep it low.
+  const creamSat = Math.max(12, 18 + profile.chroma * 8);   // 10-26%
+  const greySat  = Math.max(3,  6  + profile.chroma * 4);   // 2-10%
+
+  // Lightness range scales with user's value: lighter people get lighter neutrals
+  const base = (profile.value + 1) / 2; // 0..1
+
+  // Build mix: warm creams from light→medium, cool greys from medium→dark.
+  // Adjust mix based on temperature.
+  const neutrals = [];
+
+  // Warm creams (always include at least 2)
+  const creamLightnesses = [90 - base * 8, 78 - base * 12, 64 - base * 15];
+  creamLightnesses.forEach(l => {
+    const clamped = Math.max(20, Math.min(95, l));
+    neutrals.push(hslToHex(warmHue, creamSat, clamped));
+  });
+
+  // Cool greys (always include at least 2)
+  const greyLightnesses = [82 - base * 10, 58 - base * 18, 38 - base * 18];
+  greyLightnesses.forEach(l => {
+    const clamped = Math.max(15, Math.min(92, l));
+    neutrals.push(hslToHex(coolHue, greySat, clamped));
+  });
+
+  return neutrals;
+}
+function analyzeResults() {
+  // Compute user's axis profile from likes (positive signal) and dislikes (negative)
+  let tempSum = 0, valueSum = 0, chromaSum = 0;
+  let likes = 0, dislikes = 0;
+  const liked = [], disliked = [];
+
+  results.forEach(r => {
+    const c = r.color;
+    if (r.liked) {
+      tempSum   += c.temp;
+      valueSum  += c.value;
+      chromaSum += c.chroma;
+      likes++;
+      liked.push(c);
+    } else {
+      // Rejections pull in the opposite direction (with much less weight —
+      // a "no" can mean many things: too dark, too bright, hesitation, etc.
+      // A "yes" is a clearer signal of what works.)
+      tempSum   -= c.temp   * 0.4;
+      valueSum  -= c.value  * 0.4;
+      chromaSum -= c.chroma * 0.4;
+      dislikes++;
+      disliked.push(c);
+    }
+  });
+
+  const total = Math.max(1, likes + dislikes * 0.4);
+  const profile = {
+    temp:   tempSum   / total,
+    value:  valueSum  / total,
+    chroma: chromaSum / total
+  };
+
+  // Find closest sub-season (weighted distance, chroma weighted more heavily
+  // because it's usually the most discriminating axis)
+  let best = null, bestDist = Infinity;
+  Object.entries(SUB_SEASONS).forEach(([name, sub]) => {
+    const dt = (profile.temp   - sub.temp)   * 1.0;
+    const dv = (profile.value  - sub.value)  * 1.0;
+    const dc = (profile.chroma - sub.chroma) * 1.3;
+    const dist = Math.sqrt(dt*dt + dv*dv + dc*dc);
+    if (dist < bestDist) { bestDist = dist; best = name; }
+  });
+
+  // Also rank parent seasons by total likes in each
+  const seasonLikes = { spring: [], summer: [], autumn: [], winter: [] };
+  liked.forEach(c => seasonLikes[c.season].push(c));
+
+  return { profile, subSeason: best, liked, disliked, seasonLikes };
+}
+
+// Helper: axis label based on value
+function axisLabel(value, leftLabel, rightLabel, neutralLabel) {
+  if (value < -0.25) return leftLabel;
+  if (value >  0.25) return rightLabel;
+  return neutralLabel;
+}
+
+// Helper: render an axis slider showing where the user lands
+function renderAxisSlider(label, value, leftLabel, rightLabel, neutralLabel) {
+  const pct = Math.round(((value + 1) / 2) * 100); // -1..1 → 0..100
+  const currentLabel = axisLabel(value, leftLabel, rightLabel, neutralLabel);
+  return `
+    <div class="axis-row">
+      <div class="axis-head">
+        <div class="axis-label">${label}</div>
+        <div class="axis-value">${currentLabel}</div>
+      </div>
+      <div class="axis-track">
+        <div class="axis-ends"><span>${leftLabel}</span><span>${rightLabel}</span></div>
+        <div class="axis-bar">
+          <div class="axis-marker" style="left: ${pct}%"></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function showResults() {
   stopCamera();
-  cameraScreen.classList.remove("active");
-  picker.style.display = "flex";
+  topBar.style.display = "none";
+  controls.style.display = "none";
+  voteHint.style.display = "none";
+  setDrapeColor("#F4EFE7");
+
+  const { profile, subSeason, liked, disliked, seasonLikes } = analyzeResults();
+  const sub = SUB_SEASONS[subSeason];
+
+  // ——— "Colors you loved" — grouped by season, dominant first ———
+  const likedGroups = Object.keys(seasonLikes)
+    .filter(s => seasonLikes[s].length > 0)
+    .map(s => ({ season: s, colors: seasonLikes[s] }))
+    .sort((a, b) => {
+      // Dominant season first, then by count
+      if (a.season === sub.parent) return -1;
+      if (b.season === sub.parent) return 1;
+      return b.colors.length - a.colors.length;
+    });
+
+  let likedHtml = "";
+  if (likedGroups.length === 0) {
+    likedHtml = `<div class="empty-note">You didn't pick any colors — try again.</div>`;
+  } else {
+    likedHtml = likedGroups.map(g => {
+      const sm = SEASON_META[g.season];
+      const dots = g.colors.map(c =>
+        `<div style="background:${c.hex}" title="${c.note}"></div>`
+      ).join("");
+      return `
+        <div class="other-group">
+          <div class="other-head">
+            <div class="other-season-name">${sm.name}</div>
+            <div class="other-count">${g.colors.length} color${g.colors.length > 1 ? 's' : ''}</div>
+          </div>
+          <div class="other-dots">${dots}</div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // ——— Rejected colors grouped by season ———
+  let rejectedHtml = "";
+  if (disliked.length > 0) {
+    const dislikedBySeason = { spring: [], summer: [], autumn: [], winter: [] };
+    disliked.forEach(c => dislikedBySeason[c.season].push(c));
+    const dislikeGroups = Object.keys(dislikedBySeason)
+      .filter(s => dislikedBySeason[s].length > 0)
+      .map(s => ({ season: s, colors: dislikedBySeason[s] }))
+      .sort((a, b) => b.colors.length - a.colors.length);
+
+    rejectedHtml = `
+      <div class="section-label">Avoid near your face · colors that drained you</div>
+      ${dislikeGroups.map(g => {
+        const sm = SEASON_META[g.season];
+        const dots = g.colors.map(c =>
+          `<div style="background:${c.hex}" title="${c.note}"></div>`
+        ).join("");
+        return `
+          <div class="other-group">
+            <div class="other-head">
+              <div class="other-season-name">${sm.name}</div>
+              <div class="other-count">${g.colors.length} color${g.colors.length > 1 ? 's' : ''}</div>
+            </div>
+            <div class="other-dots">${dots}</div>
+          </div>
+        `;
+      }).join("")}
+    `;
+  }
+
+  // ——— Suggested palette (generated rainbow + neutrals) ———
+  const rainbow = generatePersonalPalette(profile);
+  const neutrals = generateNeutrals(profile);
+  const rainbowDots = rainbow.map(hex =>
+    `<div class="palette-dot-r" style="background:${hex}"></div>`
+  ).join("");
+  const neutralDots = neutrals.map(hex =>
+    `<div class="palette-dot-r" style="background:${hex}"></div>`
+  ).join("");
+
+  // ——— Interpretation ———
+  let interpretation = "";
+  const absTemp = Math.abs(profile.temp);
+  const absChroma = Math.abs(profile.chroma);
+  if (absChroma > 0.4 && profile.chroma < 0) {
+    interpretation = "Your strongest signal is a clear preference for <em>muted, dusted</em> tones — you reject saturation. ";
+  } else if (absChroma > 0.4 && profile.chroma > 0) {
+    interpretation = "Your strongest signal is a preference for <em>clear, saturated</em> tones. ";
+  }
+  if (absTemp < 0.2) {
+    interpretation += "Your temperature sits near neutral — you can borrow from both warm and cool palettes.";
+  } else if (profile.temp > 0.3) {
+    interpretation += "You lean warm — golden, earthy tones serve you better.";
+  } else if (profile.temp < -0.3) {
+    interpretation += "You lean cool — dusty, slate-like tones serve you better.";
+  }
+
+  // ——— Axis sliders ———
+  const axesHtml = `
+    <div class="axes">
+      ${renderAxisSlider("Temperature", profile.temp,  "Cool",  "Warm",   "Neutral")}
+      ${renderAxisSlider("Value",       profile.value, "Light", "Deep",   "Medium")}
+      ${renderAxisSlider("Chroma",      profile.chroma,"Muted", "Bright", "Balanced")}
+    </div>
+  `;
+
+  resultsInner.innerHTML = `
+    <div class="results-eyebrow">Your best match</div>
+    <div class="results-title">You are</div>
+    <div class="results-season"><em>${subSeason}</em></div>
+    <div class="results-summary">${sub.description}${interpretation ? '<br><br>' + interpretation : ''}</div>
+
+    <div class="section-label">Your profile</div>
+    ${axesHtml}
+
+    <div class="section-label">Colors you loved · ${liked.length} pick${liked.length !== 1 ? 's' : ''}</div>
+    ${likedHtml}
+
+    ${rejectedHtml}
+
+    <div class="section-label">Suggested palette · built from your profile</div>
+    <div class="palette-card">
+      <div class="palette-grid">${rainbowDots}</div>
+      <div class="palette-caption">A rainbow generated at <em>your</em> temperature, value, and chroma — colors you haven't tested but likely suit you.</div>
+    </div>
+
+    <div class="section-label">Suggested neutrals</div>
+    <div class="palette-card">
+      <div class="palette-grid">${neutralDots}</div>
+      <div class="palette-caption">Whites, creams, and greys tuned to your profile.</div>
+    </div>
+
+    <div class="results-actions">
+      <button class="results-btn primary" onclick="goToPickerFromResults()">Use these palettes · try on clothes</button>
+      <div class="results-actions-row">
+        <button class="results-btn secondary" onclick="continueTest()">Continue testing</button>
+        <button class="results-btn secondary" onclick="shareResults()">Share</button>
+      </div>
+    </div>
+  `;
+
+  resultsScreen.classList.add("active");
+  // Save to localStorage so returning users skip the test
+  saveAnalysis();
+}
+
+function goToPickerFromResults() {
+  resultsScreen.classList.remove("active");
+  showPicker();
+}
+
+function restart() {
+  resultsScreen.classList.remove("active");
+  intro.classList.remove("hidden");
+}
+
+function shareResults() {
+  const { subSeason, liked } = analyzeResults();
+  const sub = SUB_SEASONS[subSeason];
+  const text = `My Hue result: ${subSeason} (${sub.tagline}). Colors I loved: ${liked.map(c => c.note).join(", ")}.`;
+  if (navigator.share) {
+    navigator.share({ title: "My color analysis", text }).catch(() => {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(text);
+    alert("Result copied to clipboard");
+  }
+}
+
+// ——— Storage ———
+const STORAGE_KEY = "drape.analysis.v1";
+
+// Find top-ranked sub-seasons in order. Returns sorted array: [{name, dist}, ...]
+function rankSubSeasons(profile) {
+  return Object.entries(SUB_SEASONS).map(([name, sub]) => {
+    const dt = (profile.temp   - sub.temp)   * 1.0;
+    const dv = (profile.value  - sub.value)  * 1.0;
+    const dc = (profile.chroma - sub.chroma) * 1.3;
+    return { name, dist: Math.sqrt(dt*dt + dv*dv + dc*dc) };
+  }).sort((a, b) => a.dist - b.dist);
+}
+
+// Build a curated "palette" for a given sub-season in the user's own profile.
+// It takes the sub-season's target axes and generates the rainbow at THOSE axes,
+// so Dark Autumn always looks like Dark Autumn even if your profile is Soft Autumn.
+function paletteForSubSeason(subName) {
+  const sub = SUB_SEASONS[subName];
+  const rainbow = generatePersonalPalette({ temp: sub.temp, value: sub.value, chroma: sub.chroma });
+  const neutrals = generateNeutrals({ temp: sub.temp, value: sub.value, chroma: sub.chroma });
+  return [...rainbow, ...neutrals];
+}
+
+function saveAnalysis() {
+  const { profile, liked, disliked } = analyzeResults();
+  const ranked = rankSubSeasons(profile);
+  const primary = ranked[0];
+  const primaryParent = SUB_SEASONS[primary.name].parent;
+
+  // Find the best sub-season from a DIFFERENT parent season.
+  // This is the real "secondary" — a meaningful alternative, not just the next autumn.
+  const secondary = ranked.find(r => SUB_SEASONS[r.name].parent !== primaryParent);
+
+  // Save secondary only if it's "close enough" — we look at whether the user
+  // has meaningful likes in that parent season (at least 30% of their likes).
+  // That's a better signal than raw geometric distance.
+  const likesByParent = { spring: 0, summer: 0, autumn: 0, winter: 0 };
+  liked.forEach(c => likesByParent[c.season]++);
+  const totalLikes = liked.length || 1;
+  const secondaryParent = secondary ? SUB_SEASONS[secondary.name].parent : null;
+  const secondaryShare = secondaryParent ? likesByParent[secondaryParent] / totalLikes : 0;
+  const primaryShare = likesByParent[primaryParent] / totalLikes;
+
+  // Keep secondary if its parent has at least 25% of likes AND at least 60%
+  // of what the primary's parent has (i.e. not far behind)
+  const keepSecondary = secondary && secondaryShare >= 0.25 && secondaryShare >= primaryShare * 0.6;
+
+  const payload = {
+    profile,
+    primary: primary.name,
+    secondary: keepSecondary ? secondary.name : null,
+    suggestedPalette: generatePersonalPalette(profile),
+    suggestedNeutrals: generateNeutrals(profile),
+    primaryPalette: paletteForSubSeason(primary.name),
+    secondaryPalette: keepSecondary ? paletteForSubSeason(secondary.name) : null,
+    likedColors: liked.map(c => c.hex),
+    timestamp: Date.now()
+  };
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  } catch (e) {
+    console.warn("Could not save analysis:", e);
+  }
+  return payload;
+}
+
+function loadAnalysis() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+}
+
+function clearAnalysis() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+}
+
+// ——— Picker (returning users) ———
+const pickerScreen = document.getElementById("picker");
+const pickerScroll = document.getElementById("pickerScroll");
+
+function renderPicker(analysis) {
+  const primaryParent = SUB_SEASONS[analysis.primary].parent;
+
+  // Build 5 cards: custom first, then 4 standard seasons
+  const cards = [];
+
+  // 1. Custom palette (your rainbow + neutrals)
+  cards.push({
+    key: "custom",
+    label: "Your custom rainbow",
+    name: "Your palette",
+    tagline: "Built from your exact profile",
+    palette: [...analysis.suggestedPalette, ...analysis.suggestedNeutrals],
+    isMatch: false
+  });
+
+  // 2-5. Four standard seasons
+  const seasonOrder = ["spring", "summer", "autumn", "winter"];
+  seasonOrder.forEach(seasonKey => {
+    const meta = SEASON_META[seasonKey];
+    cards.push({
+      key: seasonKey,
+      label: seasonKey === primaryParent ? "Your match" : null,
+      name: meta.name,
+      tagline: meta.tagline,
+      palette: FULL_PALETTES[seasonKey],
+      isMatch: seasonKey === primaryParent
+    });
+  });
+
+  pickerScroll.innerHTML = `
+    <div class="picker-header">
+      <div class="eyebrow">Hue · your palettes</div>
+      <h2>Pick a palette<br><em>to try on clothes.</em></h2>
+    </div>
+    ${cards.map(c => `
+      <button class="palette-option" data-key="${c.key}">
+        <div class="palette-option-head">
+          <div>
+            ${c.label ? `<div class="palette-option-label${c.isMatch ? ' match' : ''}">${c.label}</div>` : ''}
+            <div class="palette-option-name"><em>${c.name}</em></div>
+            <div class="palette-option-tag">${c.tagline}</div>
+          </div>
+          <svg class="palette-option-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="palette-option-dots">
+          ${c.palette.slice(0, 12).map(hex => `<div style="background:${hex}"></div>`).join("")}
+        </div>
+      </button>
+    `).join("")}
+  `;
+
+  // Wire up card taps
+  pickerScroll.querySelectorAll(".palette-option").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const key = btn.getAttribute("data-key");
+      const card = cards.find(c => c.key === key);
+      openPaletteCamera(card.palette, card.name);
+    });
+  });
+}
+
+function showPicker() {
+  const analysis = loadAnalysis();
+  if (!analysis) return false;
+  renderPicker(analysis);
+  intro.classList.add("hidden");
+  resultsScreen.classList.remove("active");
+  pickerScreen.classList.add("active");
+  return true;
+}
+
+function hidePicker() {
+  pickerScreen.classList.remove("active");
+}
+
+// ——— Palette camera (Hue-style) ———
+const paletteCameraScreen = document.getElementById("paletteCamera");
+const paletteVideo = document.getElementById("paletteVideo");
+const paletteOverlay = document.getElementById("paletteOverlay");
+const paletteCameraStatus = document.getElementById("paletteCameraStatus");
+const paletteCameraName = document.getElementById("paletteCameraName");
+
+let paletteCameraStream = null;
+let paletteCameraFacing = "environment";
+
+async function startPaletteCamera() {
+  stopPaletteCamera();
+  paletteCameraStatus.classList.remove("hidden", "error");
+  paletteCameraStatus.textContent = "Starting camera…";
+  try {
+    paletteCameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: paletteCameraFacing }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false
+    });
+    paletteVideo.srcObject = paletteCameraStream;
+    await paletteVideo.play();
+    paletteCameraStatus.classList.add("hidden");
+  } catch (err) {
+    paletteCameraStatus.classList.add("error");
+    let msg = "Camera unavailable.";
+    if (err.name === "NotAllowedError" || err.name === "SecurityError") {
+      msg = "Camera access denied. Allow camera permission and reload.";
+    } else if (err.name === "NotFoundError") {
+      msg = "No camera found.";
+    }
+    paletteCameraStatus.innerHTML = `<div>${msg}</div>`;
+  }
+}
+
+function stopPaletteCamera() {
+  if (paletteCameraStream) {
+    paletteCameraStream.getTracks().forEach(t => t.stop());
+    paletteCameraStream = null;
+  }
+  paletteVideo.srcObject = null;
+}
+
+function openPaletteCamera(paletteHexes, name) {
+  // Limit to 25 dots (5x5 grid) — pick representative ones if longer
+  let dots = paletteHexes;
+  if (dots.length > 25) {
+    // Sample evenly
+    const step = dots.length / 25;
+    dots = Array.from({ length: 25 }, (_, i) => paletteHexes[Math.floor(i * step)]);
+  } else if (dots.length < 25 && dots.length > 0) {
+    // Pad nothing — just show what we have, grid wraps naturally
+  }
+
+  paletteOverlay.innerHTML = `
+    <div class="palette-grid-cam">
+      ${dots.map(hex => `<div class="palette-dot-cam" style="background:${hex}"></div>`).join("")}
+    </div>
+  `;
+  paletteCameraName.textContent = name;
+
+  hidePicker();
+  paletteCameraScreen.classList.add("active");
+  startPaletteCamera();
+}
+
+function closePaletteCamera() {
+  stopPaletteCamera();
+  paletteCameraScreen.classList.remove("active");
+  pickerScreen.classList.add("active");
+}
+
+document.getElementById("paletteCameraBack").addEventListener("click", closePaletteCamera);
+document.getElementById("paletteCameraFlip").addEventListener("click", () => {
+  paletteCameraFacing = paletteCameraFacing === "environment" ? "user" : "environment";
+  startPaletteCamera();
 });
-document.getElementById("flipCamera").addEventListener("click", () => {
-  facingMode = facingMode === "environment" ? "user" : "environment";
+
+// ——— Retake ———
+document.getElementById("retakeBtn").addEventListener("click", () => {
+  if (!confirm("Clear your saved palettes and retake the test?")) return;
+  clearAnalysis();
+  hidePicker();
+  intro.classList.remove("hidden");
+});
+
+// ——— Hook saveAnalysis into showResults flow ———
+// saveAnalysis() is called directly at the end of showResults() below.
+
+// ——— Router: on load, if we have saved analysis, skip intro and show picker ———
+window.addEventListener("DOMContentLoaded", () => {
+  if (loadAnalysis()) {
+    showPicker();
+  }
+});
+
+
+// ——— Wire up ———
+document.getElementById("startBtn").addEventListener("click", startTest);
+document.getElementById("likeBtn").addEventListener("click", () => vote(true));
+document.getElementById("dislikeBtn").addEventListener("click", () => vote(false));
+document.getElementById("restartBtn").addEventListener("click", () => {
+  if (confirm("Restart the test from the beginning?")) {
+    stopCamera();
+    topBar.style.display = "none";
+    controls.style.display = "none";
+    voteHint.style.display = "none";
+    setDrapeColor("transparent");
+    intro.classList.remove("hidden");
+    resultsScreen.classList.remove("active");
+  }
+});
+document.getElementById("flipBtn").addEventListener("click", () => {
+  facingMode = facingMode === "user" ? "environment" : "user";
   startCamera();
 });
 
+// ——— Keyboard shortcuts for desktop testing ———
+document.addEventListener("keydown", (e) => {
+  if (topBar.style.display !== "flex") return;
+  if (e.key === "ArrowRight" || e.key === "l" || e.key === "L") vote(true);
+  if (e.key === "ArrowLeft" || e.key === "d" || e.key === "D") vote(false);
+});
+
+// ——— Swipe gestures ———
+let touchStart = null;
+document.addEventListener("touchstart", (e) => {
+  if (topBar.style.display !== "flex") return;
+  touchStart = e.touches[0];
+}, { passive: true });
+document.addEventListener("touchend", (e) => {
+  if (!touchStart || topBar.style.display !== "flex") return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - touchStart.clientX;
+  const dy = t.clientY - touchStart.clientY;
+  if (Math.abs(dx) > 80 && Math.abs(dx) > Math.abs(dy)) {
+    vote(dx > 0);
+  }
+  touchStart = null;
+}, { passive: true });
+
+// ——— Service worker ———
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("sw.js").catch(err => console.warn("SW registration failed:", err));

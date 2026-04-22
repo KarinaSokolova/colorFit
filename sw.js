@@ -1,12 +1,5 @@
-// Hue service worker — cache-first for offline use
 const CACHE = "hue-v3";
-const ASSETS = [
-  "./",
-  "./index.html",
-  "./manifest.webmanifest",
-  "./icon-192.png",
-  "./icon-512.png"
-];
+const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
@@ -23,16 +16,13 @@ self.addEventListener("activate", (e) => {
 });
 
 self.addEventListener("fetch", (e) => {
-  // Only handle GET requests from same origin
   if (e.request.method !== "GET") return;
   const url = new URL(e.request.url);
   if (url.origin !== location.origin) return;
-
   e.respondWith(
     caches.match(e.request).then((cached) => {
       if (cached) return cached;
       return fetch(e.request).then((resp) => {
-        // Cache successful responses
         if (resp.ok) {
           const clone = resp.clone();
           caches.open(CACHE).then((cache) => cache.put(e.request, clone));
