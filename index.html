@@ -36,27 +36,20 @@
     -webkit-overflow-scrolling: touch;
     display: flex; flex-direction: column;
   }
-  .picker-scroll { flex: 1; padding: calc(48px + env(safe-area-inset-top)) 24px 16px; }
-  .eyebrow {
-    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
-    color: #8A7A63; margin-bottom: 12px;
-  }
-  h1 {
-    font-size: 52px; font-weight: 400; line-height: 0.88;
-    letter-spacing: -0.02em; color: #1A1410; margin-bottom: 20px;
-  }
-  h1 em { font-style: italic; font-weight: 300; }
-  .intro {
-    font-size: 14px; line-height: 1.5; color: #5C4E3D;
-    max-width: 85%; margin-bottom: 32px;
+  .picker-scroll {
+    flex: 1;
+    padding: calc(20px + env(safe-area-inset-top)) 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    justify-content: center;
+    min-height: 0;
   }
 
-  .seasons { display: flex; flex-direction: column; gap: 12px; padding: 0 4px; }
   .season-card {
     border: 1.5px solid transparent;
     border-radius: 20px;
-    padding: 22px 20px;
+    padding: 22px 22px;
     text-align: left;
     cursor: pointer;
     font-family: inherit;
@@ -65,7 +58,7 @@
   .season-card:active { transform: scale(0.98); }
   .season-card.active { border-color: currentColor; }
 
-  .season-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+  .season-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
   .season-num {
     font-family: ui-monospace, 'SF Mono', Menlo, monospace;
     font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase;
@@ -94,7 +87,7 @@
   }
 
   .cta-wrap {
-    padding: 20px 24px calc(20px + env(safe-area-inset-bottom));
+    padding: 16px 20px calc(20px + env(safe-area-inset-bottom));
     border-top: 0.5px solid rgba(26,20,16,0.1);
     background: #F4EFE7;
   }
@@ -160,7 +153,7 @@
     font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
   }
 
-  /* ——— MAIN PALETTE OVERLAY (center, fills screen) ——— */
+  /* ——— Main palette overlay ——— */
   .palette-overlay {
     position: absolute;
     inset: 0;
@@ -169,7 +162,7 @@
     justify-content: center;
     z-index: 10;
     pointer-events: none;
-    padding: calc(90px + env(safe-area-inset-top)) 8vw calc(110px + env(safe-area-inset-bottom));
+    padding: calc(80px + env(safe-area-inset-top)) 8vw calc(32px + env(safe-area-inset-bottom));
   }
   .palette-grid {
     display: grid;
@@ -192,41 +185,6 @@
     box-shadow:
       0 3px 10px rgba(0,0,0,0.3),
       inset 0 0 0 1px rgba(255,255,255,0.2);
-  }
-
-  .season-label {
-    position: absolute;
-    top: calc(74px + env(safe-area-inset-top));
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 15;
-    font-family: Georgia, serif;
-    font-size: 20px;
-    font-style: italic;
-    color: white;
-    text-shadow: 0 2px 14px rgba(0,0,0,0.7);
-    letter-spacing: -0.01em;
-    pointer-events: none;
-    white-space: nowrap;
-  }
-
-  .best-colors-tag {
-    position: absolute;
-    bottom: calc(30px + env(safe-area-inset-bottom));
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 8px 18px;
-    background: rgba(0,0,0,0.55);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-radius: 999px;
-    color: white;
-    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-    font-size: 10px;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    z-index: 15;
-    pointer-events: none;
   }
 
   .camera-status {
@@ -263,12 +221,7 @@
 
   <!-- Picker -->
   <div class="picker" id="picker">
-    <div class="picker-scroll">
-      <div class="eyebrow">Hue · no. 01</div>
-      <h1>Find your<br /><em>palette.</em></h1>
-      <p class="intro">Point your camera at any garment and compare its color to the dots of your seasonal palette.</p>
-      <div class="seasons" id="seasons"></div>
-    </div>
+    <div class="picker-scroll" id="seasons"></div>
     <div class="cta-wrap">
       <button class="cta" id="openCamera">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
@@ -294,13 +247,9 @@
       </button>
     </div>
 
-    <div class="season-label" id="seasonLabel"></div>
-
     <div class="palette-overlay">
       <div class="palette-grid" id="paletteGrid"></div>
     </div>
-
-    <div class="best-colors-tag">Best Colors</div>
 
     <div class="camera-status" id="cameraStatus">Starting camera…</div>
   </div>
@@ -359,7 +308,6 @@ const PALETTES = {
   }
 };
 
-// Persist selected season across sessions
 let currentSeason = localStorage.getItem("hue.season") || "autumn";
 let facingMode = "environment";
 let stream = null;
@@ -387,11 +335,7 @@ function renderSeasons() {
       </div>
       <div class="dot-preview">${dotsHtml}</div>
     `;
-    card.addEventListener("click", () => {
-      currentSeason = key;
-      localStorage.setItem("hue.season", key);
-      renderSeasons();
-    });
+    card.addEventListener("click", () => { currentSeason = key; localStorage.setItem("hue.season", key); renderSeasons(); });
     seasonsEl.appendChild(card);
   });
 }
@@ -404,13 +348,11 @@ const statusEl = document.getElementById("cameraStatus");
 const paletteGrid = document.getElementById("paletteGrid");
 const pillDot = document.getElementById("pillDot");
 const pillName = document.getElementById("pillName");
-const seasonLabel = document.getElementById("seasonLabel");
 
 function renderOverlay() {
   const s = PALETTES[currentSeason];
   pillDot.style.background = s.accent;
   pillName.textContent = s.name;
-  seasonLabel.textContent = s.name;
   paletteGrid.innerHTML = s.colors.map(c => `<div class="palette-dot" style="background:${c}"></div>`).join("");
 }
 
@@ -460,12 +402,9 @@ document.getElementById("flipCamera").addEventListener("click", () => {
   startCamera();
 });
 
-// ——— Service worker registration ———
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js").catch(err => {
-      console.warn("SW registration failed:", err);
-    });
+    navigator.serviceWorker.register("sw.js").catch(err => console.warn("SW registration failed:", err));
   });
 }
 </script>

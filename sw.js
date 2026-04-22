@@ -1,5 +1,5 @@
 // Hue service worker — cache-first for offline use
-const CACHE = "hue-v1";
+const CACHE = "hue-v2";
 const ASSETS = [
   "./",
   "./index.html",
